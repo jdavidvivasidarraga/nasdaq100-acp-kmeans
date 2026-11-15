@@ -39,8 +39,26 @@ if len(variables) < 4:
 
 p_wins = st.sidebar.slider("Winsorización (% recortado en cada cola)", 0.0, 10.0, 5.0, 0.5) / 100
 
-d, X, Z = preparar(df_raw, variables, p_wins)
-pca, comps, cargas, var = acp(Z)
+@st.cache_data(show_spinner="Preparando datos y calculando el ACP...")
+def preparar_y_acp(variables, p_wins):
+    d, X, Z = preparar(df_raw, list(variables), p_wins)
+    _, comps, cargas, var = acp(Z)
+    return d, X, Z, comps, cargas, var
+
+
+@st.cache_data(show_spinner="Probando distintos valores de K...")
+def evaluar_k_cache(X_km):
+    return evaluar_k(X_km)
+
+
+@st.cache_data(show_spinner="Ejecutando K-Means...")
+def kmeans_cache(X_km, k):
+    _, etiquetas, sil = kmeans(X_km, k)
+    return etiquetas, sil
+
+
+d, X, Z, comps, cargas, var = preparar_y_acp(tuple(variables), p_wins)
+d = d.copy()
 
 kaiser = int((var["Valor propio"] > 1).sum())
 n_comp = st.sidebar.slider("Componentes a conservar", 2, len(variables), max(2, kaiser),
@@ -49,7 +67,7 @@ espacio = st.sidebar.radio("K-Means se aplica sobre", ["Componentes seleccionado
 X_km = comps.iloc[:, :n_comp] if espacio.startswith("Comp") else Z
 k = st.sidebar.slider("Número de grupos (K)", 2, 8, 4)
 
-km, etiquetas, sil_obs = kmeans(X_km, k)
+etiquetas, sil_obs = kmeans_cache(X_km, k)
 d["Grupo"] = [f"Grupo {chr(65 + g)}" for g in etiquetas]
 d["Silueta"] = sil_obs
 orden_grupos = sorted(d["Grupo"].unique())
@@ -286,7 +304,7 @@ elif pagina.startswith("5"):
     st.caption(f"K-Means aplicado sobre: {espacio.lower()}"
                + (f" ({n_comp} componentes)" if espacio.startswith("Comp") else ""))
 
-    ev = evaluar_k(X_km)
+    ev = evaluar_k_cache(X_km)
     c1, c2 = st.columns(2)
     fig = px.line(ev, x="K", y="Inercia", markers=True, template=PLANTILLA, title="Método del codo")
     fig.add_vline(x=k, line_dash="dash", line_color="gray")

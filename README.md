@@ -4,7 +4,7 @@
 Taller individual de **Machine Learning aplicado a Economía y Finanzas** — Pontificia Universidad Javeriana Cali.
 Autor: Juan David Vivas Idarraga.
 
-**App desplegada:** _(pegar aquí el enlace de Streamlit Community Cloud)_
+**App desplegada:** https://nasdaq100-acp-kmeans.streamlit.app/
 **Video de sustentación:** _(pegar aquí el enlace)_
 
 ---
